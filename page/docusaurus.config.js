@@ -14,8 +14,8 @@ const config = {
   onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
-  organizationName: 'Hug0x0', // Usually your GitHub org/user name.
-  projectName: 'starknet-devnet', // Usually your repo name.
+  organizationName: 'Shard-Labs',
+  projectName: 'starknet-devnet',
   deploymentBranch: "gh-pages",
 
   i18n: {

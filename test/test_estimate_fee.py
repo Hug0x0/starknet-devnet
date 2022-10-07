@@ -8,9 +8,21 @@ from starkware.starknet.public.abi import get_selector_from_name
 
 
 from starknet_devnet.constants import DEFAULT_GAS_PRICE
-from .util import deploy, devnet_in_background, load_file_content
+from .util import (
+    call,
+    deploy,
+    devnet_in_background,
+    estimate_message_fee,
+    load_file_content,
+)
 from .settings import APP_URL
-from .shared import CONTRACT_PATH, EXPECTED_CLASS_HASH
+from .shared import (
+    CONTRACT_PATH,
+    EXPECTED_CLASS_HASH,
+    L1L2_ABI_PATH,
+    L1L2_CONTRACT_PATH,
+    PREDEPLOY_ACCOUNT_CLI_ARGS,
+)
 
 DEPLOY_CONTENT = load_file_content("deploy.json")
 INVOKE_CONTENT = load_file_content("invoke.json")
@@ -86,12 +98,19 @@ def test_estimate_fee_with_invalid_data():
 
     json_error_message = resp.json()["message"]
     assert resp.status_code == 400
-    assert "Invalid InvokeFunction" in json_error_message
+    assert "Invalid format of fee estimation request" in json_error_message
 
 
 @pytest.mark.estimate_fee
+@pytest.mark.parametrize(
+    "request_kwargs",
+    [
+        {},  # tx version 0
+        {"type": "INVOKE_FUNCTION"},  # tx version 1
+    ],
+)
 @devnet_in_background("--gas-price", str(DEFAULT_GAS_PRICE))
-def test_estimate_fee_with_complete_request_data():
+def test_estimate_fee_with_complete_request_data(request_kwargs):
     """Estimate fee with complete request data"""
 
     deploy_info = deploy(CONTRACT_PATH, ["0"])
@@ -104,10 +123,11 @@ def test_estimate_fee_with_complete_request_data():
             "calldata": ["10", "20"],
             "max_fee": "0x0",
             "entry_point_selector": "0x362398bec32bc0ebb411203221a35a0301193a96f317ebe5e40be9f60d15320",
+            **request_kwargs,
         }
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 200, f"Request not OK: {response.json()}"
     common_estimate_response(response.json())
 
 
@@ -157,3 +177,30 @@ def test_simulate_transaction():
         },
         "signature": [],
     }
+
+
+@devnet_in_background(*PREDEPLOY_ACCOUNT_CLI_ARGS)
+def test_estimate_message_fee():
+    """Estimate message fee from l1 to l2"""
+
+    dummy_l1_address = "0x1"
+    user_id = "1"
+
+    l2_contract_address = deploy(contract=L1L2_CONTRACT_PATH)["address"]
+
+    message_fee = estimate_message_fee(
+        from_address=dummy_l1_address,
+        function="deposit",
+        inputs=[user_id, "100"],
+        to_address=l2_contract_address,
+        abi_path=L1L2_ABI_PATH,
+    )
+    assert int(message_fee) > 0
+
+    balance_after = call(
+        function="get_balance",
+        address=l2_contract_address,
+        abi_path=L1L2_ABI_PATH,
+        inputs=[user_id],
+    )
+    assert int(balance_after) == 0

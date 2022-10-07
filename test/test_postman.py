@@ -5,35 +5,39 @@ Test postman usage. This test has one single pytest case, because the whole flow
 import json
 import subprocess
 
-from test.web3_util import web3_call, web3_deploy, web3_transact
-from test.settings import APP_URL, L1_HOST, L1_PORT, L1_URL
-from test.util import (
-    call,
-    deploy,
-    devnet_in_background,
-    ensure_server_alive,
-    invoke,
-    load_file_content,
-    terminate_and_wait,
-)
-
 import psutil
 import pytest
 
 from web3 import Web3
 import requests
 
-
-from .shared import ARTIFACTS_PATH
-
-CONTRACT_PATH = f"{ARTIFACTS_PATH}/l1l2.cairo/l1l2.json"
-ABI_PATH = f"{ARTIFACTS_PATH}/l1l2.cairo/l1l2_abi.json"
+from .account import invoke
+from .util import (
+    call,
+    deploy,
+    devnet_in_background,
+    ensure_server_alive,
+    estimate_message_fee,
+    load_file_content,
+    terminate_and_wait,
+)
+from .settings import APP_URL, L1_HOST, L1_PORT, L1_URL
+from .shared import (
+    L1L2_ABI_PATH,
+    L1L2_CONTRACT_PATH,
+    PREDEPLOY_ACCOUNT_CLI_ARGS,
+    PREDEPLOYED_ACCOUNT_ADDRESS,
+    PREDEPLOYED_ACCOUNT_PRIVATE_KEY,
+)
+from .web3_util import web3_call, web3_deploy, web3_transact
 
 ETH_CONTRACTS_PATH = "artifacts/contracts/solidity"
 STARKNET_MESSAGING_PATH = (
     f"{ETH_CONTRACTS_PATH}/MockStarknetMessaging.sol/MockStarknetMessaging.json"
 )
 L1L2_EXAMPLE_PATH = f"{ETH_CONTRACTS_PATH}/L1L2.sol/L1L2Example.json"
+
+USER_ID = 1
 
 
 @pytest.fixture(autouse=True)
@@ -156,23 +160,23 @@ def load_messaging_contract(starknet_messaging_contract_address):
     return json.loads(resp.text)
 
 
-def init_l2_contract(l1l2_example_contract_address):
+def _init_l2_contract(l1l2_example_contract_address: str):
     """Deploys the L1L2Example cairo contract, returns the result of calling 'get_balance'"""
 
-    deploy_info = deploy(CONTRACT_PATH)
+    deploy_info = deploy(L1L2_CONTRACT_PATH)
+    l2_address = deploy_info["address"]
 
     # increase and withdraw balance
     invoke(
-        function="increase_balance",
-        address=deploy_info["address"],
-        abi_path=ABI_PATH,
-        inputs=["1", "3333"],
+        calls=[(l2_address, "increase_balance", [USER_ID, 3333])],
+        account_address=PREDEPLOYED_ACCOUNT_ADDRESS,
+        private_key=PREDEPLOYED_ACCOUNT_PRIVATE_KEY,
     )
+    contract_address_int = int(l1l2_example_contract_address, 16)
     invoke(
-        function="withdraw",
-        address=deploy_info["address"],
-        abi_path=ABI_PATH,
-        inputs=["1", "1000", l1l2_example_contract_address],
+        calls=[(l2_address, "withdraw", [USER_ID, 1000, contract_address_int])],
+        account_address=PREDEPLOYED_ACCOUNT_ADDRESS,
+        private_key=PREDEPLOYED_ACCOUNT_PRIVATE_KEY,
     )
 
     # flush L2 to L1 messages
@@ -185,7 +189,7 @@ def init_l2_contract(l1l2_example_contract_address):
             {
                 "from_address": deploy_info["address"],
                 "to_address": l1l2_example_contract_address,
-                "payload": [0, 1, 1000],  # MESSAGE_WITHDRAW, user, amount
+                "payload": [0, USER_ID, 1000],  # MESSAGE_WITHDRAW, user, amount
             }
         ],
         expected_l1_provider=L1_URL,
@@ -195,19 +199,19 @@ def init_l2_contract(l1l2_example_contract_address):
     value = call(
         function="get_balance",
         address=deploy_info["address"],
-        abi_path=ABI_PATH,
-        inputs=["1"],
+        abi_path=L1L2_ABI_PATH,
+        inputs=[str(USER_ID)],
     )
 
     assert value == "2333"
     return deploy_info["address"]
 
 
-def l1_l2_message_exchange(web3, l1l2_example_contract, l2_contract_address):
+def _l1_l2_message_exchange(web3, l1l2_example_contract, l2_contract_address):
     """Tests message exchange"""
 
     # assert contract balance when starting
-    balance = web3_call("userBalances", l1l2_example_contract, 1)
+    balance = web3_call("userBalances", l1l2_example_contract, USER_ID)
     assert balance == 0
 
     # withdraw in l1 and assert contract balance
@@ -216,22 +220,30 @@ def l1_l2_message_exchange(web3, l1l2_example_contract, l2_contract_address):
         "withdraw",
         l1l2_example_contract,
         int(l2_contract_address, base=16),
-        1,
+        USER_ID,
         1000,
     )
 
-    balance = web3_call("userBalances", l1l2_example_contract, 1)
+    balance = web3_call("userBalances", l1l2_example_contract, USER_ID)
     assert balance == 1000
 
     # assert l2 contract balance
     l2_balance = call(
         function="get_balance",
         address=l2_contract_address,
-        abi_path=ABI_PATH,
-        inputs=["1"],
+        abi_path=L1L2_ABI_PATH,
+        inputs=[str(USER_ID)],
     )
-
     assert l2_balance == "2333"
+
+    message_fee = estimate_message_fee(
+        from_address=l1l2_example_contract.address,
+        function="deposit",
+        inputs=[str(USER_ID), "100"],
+        to_address=l2_contract_address,
+        abi_path=L1L2_ABI_PATH,
+    )
+    assert int(message_fee) > 0
 
     # deposit in l1 and assert contract balance
     web3_transact(
@@ -239,11 +251,11 @@ def l1_l2_message_exchange(web3, l1l2_example_contract, l2_contract_address):
         "deposit",
         l1l2_example_contract,
         int(l2_contract_address, base=16),
-        1,
+        USER_ID,
         600,
     )
 
-    balance = web3_call("userBalances", l1l2_example_contract, 1)
+    balance = web3_call("userBalances", l1l2_example_contract, USER_ID)
 
     assert balance == 400
 
@@ -258,7 +270,7 @@ def l1_l2_message_exchange(web3, l1l2_example_contract, l2_contract_address):
                 "args": {
                     "from_address": l1l2_example_contract.address,
                     "to_address": l2_contract_address,
-                    "payload": [1, 600],  # user, amount
+                    "payload": [USER_ID, 600],  # user, amount
                 },
             }
         ],
@@ -270,15 +282,15 @@ def l1_l2_message_exchange(web3, l1l2_example_contract, l2_contract_address):
     l2_balance = call(
         function="get_balance",
         address=l2_contract_address,
-        abi_path=ABI_PATH,
-        inputs=["1"],
+        abi_path=L1L2_ABI_PATH,
+        inputs=[str(USER_ID)],
     )
 
     assert l2_balance == "2933"
 
 
 @pytest.mark.web3_messaging
-@devnet_in_background()
+@devnet_in_background(*PREDEPLOY_ACCOUNT_CLI_ARGS)
 def test_postman():
     """Test postman with a complete L1<>L2 flow"""
     l1l2_example_contract = None
@@ -301,23 +313,24 @@ def test_postman():
     assert load_resp["l1_provider"] == L1_URL
 
     # Test initializing the l2 example contract
-    l2_contract_address = init_l2_contract(l1l2_example_contract.address)
+    l2_contract_address = _init_l2_contract(l1l2_example_contract.address)
 
-    l1_l2_message_exchange(web3, l1l2_example_contract, l2_contract_address)
+    _l1_l2_message_exchange(web3, l1l2_example_contract, l2_contract_address)
 
 
-def load_l1_messaging_contract(req_dict: dict):
+def _load_l1_messaging_contract(req_dict: dict):
     """Load L1 messaging contract"""
     return requests.post(
         f"{APP_URL}/postman/load_l1_messaging_contract", json=(req_dict)
     )
 
 
-@devnet_in_background()
+@pytest.mark.web3_messaging
+@devnet_in_background(*PREDEPLOY_ACCOUNT_CLI_ARGS)
 def test_invalid_starknet_function_call_load_l1_messaging_contract():
     """Call with invalid data on starknet function call"""
     load_messaging_contract_request = {}
-    resp = load_l1_messaging_contract(load_messaging_contract_request)
+    resp = _load_l1_messaging_contract(load_messaging_contract_request)
 
     json_error_message = resp.json()["message"]
     msg = "L1 network or StarknetMessaging contract address not specified"

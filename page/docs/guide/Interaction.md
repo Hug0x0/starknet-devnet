@@ -20,7 +20,6 @@ sidebar_position: 2
   - `get_full_contract`
   - `get_nonce`
   - `get_state_update`
-  - `get_state_update`
   - `get_storage_at`
   - `get_transaction`
   - `get_transaction_receipt`

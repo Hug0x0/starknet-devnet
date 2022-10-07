@@ -17,16 +17,20 @@ class Accounts:
 
     def __init__(self, starknet_wrapper):
         self.starknet_wrapper = starknet_wrapper
-        self.__initial_balance = None
-        self.__seed = None
+        self.__n_accounts = starknet_wrapper.config.accounts
+        self.__initial_balance = starknet_wrapper.config.initial_balance
+
+        self.__seed = starknet_wrapper.config.seed
+        if self.__seed is None:
+            self.__seed = random.getrandbits(32)
+
         self.list = []
 
-        self.__generate(
-            n_accounts=starknet_wrapper.config.accounts,
-            initial_balance=starknet_wrapper.config.initial_balance,
-            seed=starknet_wrapper.config.seed,
-        )
-        if starknet_wrapper.config.accounts:
+        self.__generate()
+        if (
+            starknet_wrapper.config.accounts
+            and not starknet_wrapper.config.hide_predeployed_accounts
+        ):
             self.__print()
 
     def __getitem__(self, index):
@@ -42,17 +46,12 @@ class Accounts:
         self.list.append(account)
         return account
 
-    def __generate(self, n_accounts: int, initial_balance: int, seed: int):
+    def __generate(self):
         """Generates accounts without deploying them"""
         random_generator = random.Random()
-        self.__initial_balance = initial_balance
-        self.__seed = seed
+        random_generator.seed(self.__seed)
 
-        if seed is None:
-            seed = random_generator.getrandbits(32)
-        random_generator.seed(seed)
-
-        for _ in range(n_accounts):
+        for _ in range(self.__n_accounts):
             private_key = random_generator.getrandbits(128)
             public_key = private_to_stark_key(private_key)
 
@@ -61,7 +60,7 @@ class Accounts:
                     self.starknet_wrapper,
                     private_key=private_key,
                     public_key=public_key,
-                    initial_balance=initial_balance,
+                    initial_balance=self.__initial_balance,
                 )
             )
 

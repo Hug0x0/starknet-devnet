@@ -1,4 +1,8 @@
-## Introduction
+<!-- logo / title -->
+<p align="center" style="margin-bottom: 0px !important">
+  <img width="200" src="https://user-images.githubusercontent.com/2848732/193076972-da6fa36e-11f7-4cb3-aa29-673224f8576d.png" alt="Devnet" align="center">
+</p>
+<h1 align="center" style="margin-top: 0px !important">Starknet Devnet</h1>
 
 A Flask wrapper of Starknet state. Similar in purpose to Ganache.
 
@@ -33,7 +37,7 @@ pip install starknet-devnet
 
 ### Requirements
 
-Works with Python versions >=3.7.2 and <3.10.
+Works with Python versions >=3.8 and <3.10.
 
 On Ubuntu/Debian, first run:
 
@@ -77,7 +81,7 @@ optional arguments:
   --dump-path DUMP_PATH
                         Specify the path to dump to
   --dump-on DUMP_ON     Specify when to dump; can dump on: exit, transaction
-  --lite-mode           Applies lite-mode optimizations by disabling some features. (In the current version, lite-mode doesn't affect performance)
+  --lite-mode           Introduces speed-up by skipping block hash and deploy transaction hash calculation - applies sequential numbering instead (0x0, 0x1, 0x2, ...).
   --accounts ACCOUNTS   Specify the number of accounts to be predeployed;
                         defaults to 10
   --initial-balance INITIAL_BALANCE, -e INITIAL_BALANCE
@@ -85,6 +89,8 @@ optional arguments:
                         predeployed; defaults to 1e+21 (wei)
   --seed SEED           Specify the seed for randomness of accounts to be
                         predeployed
+  --hide-predeployed-accounts
+                        Prevents from printing the predeployed accounts details
   --start-time START_TIME
                         Specify the start time of the genesis block in Unix
                         time seconds
@@ -92,7 +98,7 @@ optional arguments:
                         Specify the gas price in wei per gas unit; defaults to
                         1e+11
   --timeout TIMEOUT, -t TIMEOUT
-                        Specify the timeout for devnet server; defaults to 60 seconds
+                        Specify the server timeout in seconds; defaults to 60
 ```
 
 You can run `starknet-devnet` in a separate shell, or you can run it in background with `starknet-devnet &`.
@@ -178,6 +184,7 @@ If you don't specify the `HOST` part, the server will indeed be available on all
   - `declare`
   - `deploy`
   - `estimate_fee`
+  - `estimate_message_fee`
   - `get_block` (currently pending block is not supported)
   - `get_block_traces`
   - `get_class_by_hash`
@@ -386,7 +393,7 @@ Response:
 
 ## Lite mode
 
-Since Devnet 0.3.0, the effect of lite mode is minimal and currently only skips block hash calculation (replacing it with iterative numbering: `0x0`, `0x1`, `0x2`, ...). Activate it by passing `--lite-mode` on startup.
+Since Devnet 0.3.0, the effect of lite mode is minimal and only skips block hash calculation (replacing it with iterative numbering: `0x0`, `0x1`, `0x2`, ...). Activate it by passing `--lite-mode` on startup.
 
 ## Restart
 
@@ -444,21 +451,21 @@ If your contract is using `print` in cairo hints (it was compiled with the `--di
 starknet-devnet 2> /dev/null
 ```
 
-To enable printing with a dockerized version of Devnet set `PYTHONUNBUFFERED=1`:
+To disable all the python logging you have to explicitly pass `PYTHONUNBUFFERED=0`:
 
-```
-docker run -p 127.0.0.1:5050:5050 -e PYTHONUNBUFFERED=1 shardlabs/starknet-devnet
+```sh
+docker run -p 127.0.0.1:5050:5050 -e PYTHONUNBUFFERED=0 shardlabs/starknet-devnet
 ```
 
 ## Predeployed accounts
 
-Devnet predeploys `--accounts` with some `--initial-balance`. The accounts get charged for transactions according to the `--gas-price`. A `--seed` can be used to regenerate the same set of accounts. Read more about it in the [Run section](#run).
+Devnet predeploys `--accounts` with some `--initial-balance`. To hide the details of these accounts `--hide-predeployed-accounts`. The accounts get charged for transactions according to the `--gas-price`. A `--seed` can be used to regenerate the same set of accounts. Read more about it in the [Run section](#run).
 
-To get the code of the account (currently OpenZeppelin v0.3.1), use one of the following:
+To get the code of the account (currently fork of OpenZeppelin's [v0.4.0b](https://github.com/OpenZeppelin/cairo-contracts/releases/tag/v0.4.0b)), use one of the following:
 
 - `GET /get_code?contractAddress=<ACCOUNT_ADDRESS>`
 - [Starknet CLI](https://www.cairo-lang.org/docs/hello_starknet/cli.html#get-code): `starknet get_code --contract_address <ACCOUNT_ADDRESS> --feeder_gateway_url <DEVNET_URL>`
-- [OpenZeppelin's cairo-contract repository](https://github.com/OpenZeppelin/cairo-contracts/tree/v0.3.1)
+- [GitHub repository](https://github.com/Shard-Labs/cairo-contracts/tree/fix-account-query-version)
 
 You can use the accounts in e.g. [starknet-hardhat-plugin](https://github.com/Shard-Labs/starknet-hardhat-plugin) via:
 
@@ -619,9 +626,15 @@ poetry run starknet-devnet
 
 When running tests locally, do it from the project root:
 
-```bash
-./scripts/compile_contracts.sh # first generate the artifacts
+First generate the artifacts:
 
+```bash
+./scripts/compile_contracts.sh
+```
+
+Use one of the testing commands:
+
+```bash
 ./scripts/test.sh [TEST_CASE] # parallelized testing - using auto detected number of CPU cores
 
 poetry run pytest -s -v test/ # for more verbose output
@@ -630,6 +643,8 @@ poetry run pytest test/<TEST_FILE> # for a single file
 
 poetry run pytest test/<TEST_FILE>::<TEST_CASE> # for a single test case
 ```
+
+In case of problems with `test_postman` test on Mac please see https://stackoverflow.com/a/52230415.
 
 ### Development - Check versioning consistency
 
@@ -669,3 +684,39 @@ You don't need to build anything to be able to run locally, but if you need the 
 ```text
 poetry build
 ```
+
+### Development - Version release
+
+You can check the current version on master with these commands:
+```
+git checkout master
+poetry version
+```
+
+To update the version use:
+```
+poetry version <VERSION>
+```
+or any other variation of that [command](https://python-poetry.org/docs/cli/#version)
+
+In file `/starknet_devnet/__init__.py` you need to manually update the version:
+```
+__version__ = "<VERSION>"
+```
+
+If you did everything correctly these commands should result with the same version:
+```
+poetry version
+poetry run starknet-devnet --version
+```
+
+Later, add a tag to the version update commit (Notice the `v`):
+```
+git tag v<VERSION>
+git push origin v<VERSION>
+```
+
+Lastly:
+- check if CI and image publish worked after commit
+- generate release notes with the corresponding tag version on GitHub
+- inform users on telegram, devnet channel in starkware discord, and [Starknet Shamans](https://community.starknet.io/t/starknet-devnet/69).

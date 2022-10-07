@@ -11,10 +11,13 @@ from starkware.starknet.services.api.gateway.transaction import (
     AccountTransaction,
     InvokeFunction,
 )
-from starkware.starknet.services.api.feeder_gateway.request_objects import CallFunction
+from starkware.starknet.services.api.gateway.transaction import Transaction
+from starkware.starknet.services.api.feeder_gateway.request_objects import (
+    CallFunction,
+    CallL1Handler,
+)
 from starkware.starknet.services.api.feeder_gateway.response_objects import (
     TransactionSimulationInfo,
-    FeeEstimationInfo,
 )
 from werkzeug.datastructures import MultiDict
 
@@ -268,19 +271,26 @@ def get_state_update():
 @feeder_gateway.route("/estimate_fee", methods=["POST"])
 async def estimate_fee():
     """Returns the estimated fee for a transaction."""
-    transaction = validate_request(request.data, InvokeFunction)
-    _, fee_response = await state.starknet_wrapper.calculate_actual_fee(transaction)
-    return jsonify(FeeEstimationInfo.load(fee_response))
+
+    try:
+        transaction = validate_request(request.data, Transaction)  # version 1
+    except StarknetDevnetException:
+        transaction = validate_request(request.data, InvokeFunction)  # version 0
+
+    _, fee_response = await state.starknet_wrapper.calculate_trace_and_fee(transaction)
+    return jsonify(fee_response)
 
 
 @feeder_gateway.route("/simulate_transaction", methods=["POST"])
 async def simulate_transaction():
     """Returns the estimated fee for a transaction."""
     transaction = validate_request(request.data, AccountTransaction)
-    trace, fee_response = await state.starknet_wrapper.calculate_actual_fee(transaction)
+    trace, fee_response = await state.starknet_wrapper.calculate_trace_and_fee(
+        transaction
+    )
 
     simulation_info = TransactionSimulationInfo(
-        trace=trace, fee_estimation=FeeEstimationInfo.load(fee_response)
+        trace=trace, fee_estimation=fee_response
     )
 
     return jsonify(simulation_info.dump())
@@ -294,3 +304,14 @@ async def get_nonce():
     nonce = await state.starknet_wrapper.get_nonce(contract_address)
 
     return jsonify(hex(nonce))
+
+
+@feeder_gateway.route("/estimate_message_fee", methods=["POST"])
+async def estimate_message_fee():
+    """Message fee estimation endpoint"""
+
+    _check_block_hash(request.args)
+
+    call = validate_request(request.data, CallL1Handler)
+    fee_estimation = await state.starknet_wrapper.estimate_message_fee(call)
+    return jsonify(fee_estimation)

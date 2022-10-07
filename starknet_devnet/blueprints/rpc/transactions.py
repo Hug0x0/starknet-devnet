@@ -3,7 +3,7 @@ RPC transaction endpoints
 """
 
 import dataclasses
-from typing import List, Optional
+from typing import List
 
 from marshmallow.exceptions import MarshmallowError
 from starkware.starknet.services.api.contract_class import ContractClass
@@ -46,7 +46,7 @@ from starknet_devnet.blueprints.rpc.structures.types import (
     Felt,
     RpcError,
 )
-from starknet_devnet.constants import SUPPORTED_TX_VERSION
+from starknet_devnet.constants import SUPPORTED_RPC_TX_VERSION
 from starknet_devnet.state import state
 from starknet_devnet.util import StarknetDevnetException
 
@@ -106,10 +106,10 @@ async def pending_transactions() -> List[RpcTransaction]:
 
 async def add_invoke_transaction(
     function_invocation: FunctionCall,
+    signature: List[Felt],
     max_fee: NumAsHex,
     version: NumAsHex,
     nonce: NumAsHex = None,
-    signature: Optional[List[Felt]] = None,
 ) -> dict:
     """
     Submit a new transaction to be added to the chain
@@ -193,7 +193,7 @@ async def add_deploy_transaction(
         contract_address_salt=int(contract_address_salt, 16),
         constructor_calldata=[int(data, 16) for data in constructor_calldata],
         contract_definition=contract_class,
-        version=SUPPORTED_TX_VERSION,
+        version=SUPPORTED_RPC_TX_VERSION,
     )
 
     contract_address, transaction_hash = await state.starknet_wrapper.deploy(
@@ -219,7 +219,7 @@ async def estimate_fee(request: RpcInvokeTransaction, block_id: BlockId) -> dict
     invoke_function = make_invoke_function(request)
 
     try:
-        _, fee_response = await state.starknet_wrapper.calculate_actual_fee(
+        _, fee_response = await state.starknet_wrapper.calculate_trace_and_fee(
             invoke_function
         )
     except StarkException as ex:

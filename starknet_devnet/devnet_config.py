@@ -107,7 +107,8 @@ def parse_args(raw_args: List[str]):
     parser.add_argument(
         "--lite-mode",
         action="store_true",
-        help="Applies lite-mode optimizations by disabling some features. (In the current version, lite-mode doesn't affect performance)",
+        help="Introduces speed-up by skipping block hash and deploy transaction hash calculation"
+        " - applies sequential numbering instead (0x0, 0x1, 0x2, ...).",
     )
     parser.add_argument(
         "--accounts",
@@ -129,6 +130,11 @@ def parse_args(raw_args: List[str]):
         help="Specify the seed for randomness of accounts to be predeployed",
     )
     parser.add_argument(
+        "--hide-predeployed-accounts",
+        action="store_true",
+        help="Prevents from printing the predeployed accounts details",
+    )
+    parser.add_argument(
         "--start-time",
         action=NonNegativeAction,
         help="Specify the start time of the genesis block in Unix time seconds",
@@ -145,7 +151,7 @@ def parse_args(raw_args: List[str]):
         "-t",
         action=NonNegativeAction,
         default=DEFAULT_TIMEOUT,
-        help=f"Specify timeout for devnet server; defaults to {DEFAULT_TIMEOUT} seconds",
+        help=f"Specify the server timeout in seconds; defaults to {DEFAULT_TIMEOUT}",
     )
     # Uncomment this once fork support is added
     # parser.add_argument(
@@ -176,3 +182,4 @@ class DevnetConfig:
         self.start_time = self.args.start_time
         self.gas_price = self.args.gas_price
         self.lite_mode = self.args.lite_mode
+        self.hide_predeployed_accounts = self.args.hide_predeployed_accounts

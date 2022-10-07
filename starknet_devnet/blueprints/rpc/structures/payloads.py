@@ -16,6 +16,7 @@ from starkware.starknet.services.api.feeder_gateway.response_objects import (
     TransactionType,
     BlockStateUpdate,
     DeclareSpecificInfo,
+    FeeEstimationInfo,
 )
 from starkware.starknet.services.api.gateway.transaction import InvokeFunction
 from starkware.starknet.services.api.gateway.transaction_utils import compress_program
@@ -34,7 +35,6 @@ from starknet_devnet.blueprints.rpc.structures.types import (
     TxnType,
     rpc_txn_type,
 )
-from starknet_devnet.constants import SUPPORTED_TX_VERSION
 from starknet_devnet.state import state
 
 
@@ -179,7 +179,7 @@ def rpc_invoke_transaction(transaction: InvokeSpecificInfo) -> RpcInvokeTransact
         "calldata": [rpc_felt(data) for data in transaction.calldata],
         "transaction_hash": rpc_felt(transaction.transaction_hash),
         "max_fee": rpc_felt(transaction.max_fee),
-        "version": hex(SUPPORTED_TX_VERSION),
+        "version": hex(transaction.version),
         "signature": [rpc_felt(value) for value in transaction.signature],
         "nonce": rpc_felt(0),
         "type": rpc_txn_type(transaction.tx_type.name),
@@ -211,7 +211,7 @@ def rpc_deploy_transaction(transaction: DeploySpecificInfo) -> RpcDeployTransact
     txn: RpcDeployTransaction = {
         "transaction_hash": rpc_felt(transaction.transaction_hash),
         "class_hash": rpc_felt(transaction.class_hash),
-        "version": hex(SUPPORTED_TX_VERSION),
+        "version": hex(transaction.version),
         "type": rpc_txn_type(transaction.tx_type.name),
         "contract_address": rpc_felt(transaction.contract_address),
         "contract_address_salt": rpc_felt(transaction.contract_address_salt),
@@ -232,14 +232,14 @@ class RpcFeeEstimate(TypedDict):
     overall_fee: NumAsHex
 
 
-def rpc_fee_estimate(fee_estimate: dict) -> dict:
+def rpc_fee_estimate(fee_estimate: FeeEstimationInfo) -> dict:
     """
     Convert gateway estimate_fee response to rpc_fee_estimate
     """
     result: RpcFeeEstimate = {
-        "gas_consumed": hex(fee_estimate["gas_usage"]),
-        "gas_price": hex(fee_estimate["gas_price"]),
-        "overall_fee": hex(fee_estimate["overall_fee"]),
+        "gas_consumed": hex(fee_estimate.gas_usage),
+        "gas_price": hex(fee_estimate.gas_price),
+        "overall_fee": hex(fee_estimate.overall_fee),
     }
     return result
 

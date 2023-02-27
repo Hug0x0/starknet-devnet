@@ -12,7 +12,7 @@ usage: starknet-devnet [-h] [-v] [--host HOST] [--port PORT] [--load-path LOAD_P
                        [--timeout TIMEOUT] [--account-class ACCOUNT_CLASS] [--fork-network FORK_NETWORK] [--fork-block FORK_BLOCK]
                        [--chain-id CHAIN_ID] [--blocks-on-demand]
 
-Run a local instance of StarkNet Devnet
+Run a local instance of Starknet Devnet
 
 optional arguments:
   -h, --help            show this help message and exit

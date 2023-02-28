@@ -2,14 +2,14 @@
 pragma solidity ^0.6.12;
 
 /**
-  Demo contract for L1 <-> L2 interaction between an L2 Starknet contract and this L1 solidity
+  Demo contract for L1 <-> L2 interaction between an L2 StarkNet contract and this L1 solidity
   contract.
 */
 
 import "./MockStarknetMessaging.sol";
 
 contract L1L2Example {
-    // The Starknet core contract.
+    // The StarkNet core contract.
     MockStarknetMessaging starknetCore;
 
     mapping(uint256 => uint256) public userBalances;
@@ -37,7 +37,7 @@ contract L1L2Example {
         payload[1] = user;
         payload[2] = amount;
 
-        // Consume the message from the Starknet core contract.
+        // Consume the message from the StarkNet core contract.
         // This will revert the (Ethereum) transaction if the message does not exist.
         starknetCore.consumeMessageFromL2(l2ContractAddress, payload);
 
@@ -61,7 +61,7 @@ contract L1L2Example {
         payload[0] = user;
         payload[1] = amount;
 
-        // Send the message to the Starknet core contract.
+        // Send the message to the StarkNet core contract.
         starknetCore.sendMessageToL2(l2ContractAddress, DEPOSIT_SELECTOR, payload);
     }
 }

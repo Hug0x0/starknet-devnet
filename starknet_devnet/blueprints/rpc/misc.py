@@ -73,7 +73,7 @@ def _get_events_from_block(block: StarknetBlock, address, keys):
 @validate_schema("chainId")
 async def chain_id() -> str:
     """
-    Return the currently configured StarkNet chain id
+    Return the currently configured Starknet chain id
     """
     devnet_state = state.starknet_wrapper.get_state()
     config = devnet_state.general_config

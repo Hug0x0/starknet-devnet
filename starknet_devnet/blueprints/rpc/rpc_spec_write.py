@@ -4,7 +4,7 @@ RPC_SPECIFICATION_WRITE = r"""
     "openrpc": "1.0.0-rc1",
     "info": {
         "version": "0.4.0",
-        "title": "StarkNet Node Write API",
+        "title": "Starknet Node Write API",
         "license": {}
     },
     "servers": [],

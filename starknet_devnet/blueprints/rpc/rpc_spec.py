@@ -7,7 +7,7 @@ RPC_SPECIFICATION = r"""
     "openrpc": "1.0.0-rc1",
     "info": {
         "version": "0.45.0",
-        "title": "StarkNet Node API",
+        "title": "Starknet Node API",
         "license": {}
     },
     "servers": [],
@@ -384,7 +384,7 @@ RPC_SPECIFICATION = r"""
         },
         {
             "name": "starknet_call",
-            "summary": "call a starknet function without creating a StarkNet transaction",
+            "summary": "call a starknet function without creating a Starknet transaction",
             "description": "Calls a function in a contract and returns the return value.  Using this call will not create a transaction; hence, will not change the state",
             "params": [
                 {
@@ -435,7 +435,7 @@ RPC_SPECIFICATION = r"""
         },
         {
             "name": "starknet_estimateFee",
-            "summary": "estimate the fee for a given StarkNet transaction",
+            "summary": "estimate the fee for a given Starknet transaction",
             "description": "estimates the resources required by a transaction relative to a given state",
             "params": [
                 {
@@ -524,7 +524,7 @@ RPC_SPECIFICATION = r"""
         },
         {
             "name": "starknet_chainId",
-            "summary": "Return the currently configured StarkNet chain id",
+            "summary": "Return the currently configured Starknet chain id",
             "params": [],
             "result": {
                 "name": "result",
@@ -712,7 +712,7 @@ RPC_SPECIFICATION = r"""
                 ]
             },
             "EVENT": {
-                "title": "A StarkNet event",
+                "title": "A Starknet event",
                 "allOf": [
                     {
                         "type": "object",
@@ -844,7 +844,7 @@ RPC_SPECIFICATION = r"""
             },
             "CHAIN_ID": {
                 "title": "chainId",
-                "description": "StarkNet chain id, given in hex representation.",
+                "description": "Starknet chain id, given in hex representation.",
                 "type": "string",
                 "pattern": "^0x[a-fA-F0-9]+$"
             },
@@ -926,7 +926,7 @@ RPC_SPECIFICATION = r"""
             },
             "TXN_HASH": {
                 "$ref": "#/components/schemas/FELT",
-                "description": "The transaction hash, as assigned in StarkNet",
+                "description": "The transaction hash, as assigned in Starknet",
                 "title": "A transaction's hash"
             },
             "FELT": {
@@ -993,7 +993,7 @@ RPC_SPECIFICATION = r"""
                         "minimum": 0
                     },
                     "sequencer_address": {
-                        "description": "The StarkNet identity of the sequencer submitting this block",
+                        "description": "The Starknet identity of the sequencer submitting this block",
                         "$ref": "#/components/schemas/FELT"
                     }
                 }
@@ -1054,7 +1054,7 @@ RPC_SPECIFICATION = r"""
                                 "minimum": 0
                             },
                             "sequencer_address": {
-                                "description": "The StarkNet identity of the sequencer submitting this block",
+                                "description": "The Starknet identity of the sequencer submitting this block",
                                 "$ref": "#/components/schemas/FELT"
                             },
                             "parent_hash": {
@@ -1080,7 +1080,7 @@ RPC_SPECIFICATION = r"""
                                 "minimum": 0
                             },
                             "sequencer_address": {
-                                "description": "The StarkNet identity of the sequencer submitting this block",
+                                "description": "The Starknet identity of the sequencer submitting this block",
                                 "$ref": "#/components/schemas/FELT"
                             },
                             "parent_hash": {
@@ -1692,7 +1692,7 @@ RPC_SPECIFICATION = r"""
                 }
             },
             "CONTRACT_CLASS": {
-                "title": "The definition of a StarkNet contract class",
+                "title": "The definition of a Starknet contract class",
                 "type": "object",
                 "properties": {
                     "program": {

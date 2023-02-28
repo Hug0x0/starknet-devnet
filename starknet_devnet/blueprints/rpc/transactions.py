@@ -198,7 +198,7 @@ def make_transaction(txn: RpcBroadcastedTxn) -> AccountTransaction:
 @validate_schema("estimateFee")
 async def estimate_fee(request: RpcBroadcastedTxn, block_id: BlockId) -> dict:
     """
-    Estimate the fee for a given StarkNet transaction
+    Estimate the fee for a given Starknet transaction
     """
     await assert_block_id_is_valid(block_id)
     transaction = make_transaction(request)

@@ -36,7 +36,7 @@ def _validate_calldata(calldata: List[Any]):
 @validate_schema("call")
 async def call(request: RpcFunctionCall, block_id: BlockId) -> List[Felt]:
     """
-    Call a starknet function without creating a StarkNet transaction
+    Call a starknet function without creating a Starknet transaction
     """
     await assert_block_id_is_valid(block_id)
 

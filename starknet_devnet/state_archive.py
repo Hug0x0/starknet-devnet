@@ -1,5 +1,5 @@
 """
-Stores StarkNet states
+Stores Starknet states
 """
 
 import shelve
@@ -12,7 +12,7 @@ from .util import StarknetDevnetException
 
 class StateArchive:
     """
-    Stores StarkNet states
+    Stores Starknet states
     """
 
     def store(self, number: int, state: StarknetState):
@@ -41,7 +41,7 @@ class StateArchive:
 
 class MemoryStateArchive(StateArchive):
     """
-    Stores StarkNet states in memory
+    Stores Starknet states in memory
     """
 
     def __init__(self):
@@ -57,7 +57,7 @@ class MemoryStateArchive(StateArchive):
 
 class DiskStateArchive(StateArchive):
     """
-    Stores StarkNet states on disk
+    Stores Starknet states on disk
     """
 
     PATH = "/tmp/starknet-devnet-state.db"

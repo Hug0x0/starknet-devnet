@@ -288,7 +288,7 @@ def test_schema_with_optional_values():
     """
     Test schema validation allowing omitting non-required values.
 
-    StarkNet JSON RPC spec methods params have a "required": bool field alongside the schema.
+    Starknet JSON RPC spec methods params have a "required": bool field alongside the schema.
     Schema validation must support handling these optional parameters.
 
     This test mocks an internal method, as I found no other solution working with e2e tests format we have currently.

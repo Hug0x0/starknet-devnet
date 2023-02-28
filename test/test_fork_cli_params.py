@@ -28,7 +28,7 @@ def test_invalid_fork_network():
 
 
 def test_url_not_sequencer():
-    """Pass a valid url but not of a StarkNet sequencer"""
+    """Pass a valid url but not of a Starknet sequencer"""
     invalid_url = "http://google.com"
     proc = ACTIVE_DEVNET.start(
         "--fork-network",
@@ -37,7 +37,7 @@ def test_url_not_sequencer():
         stdout=subprocess.PIPE,
     )
     assert read_stream(proc.stdout) == ""
-    assert f"Error: {invalid_url} is not a valid StarkNet sequencer\n" in read_stream(
+    assert f"Error: {invalid_url} is not a valid Starknet sequencer\n" in read_stream(
         proc.stderr
     )
     assert proc.returncode == 1
